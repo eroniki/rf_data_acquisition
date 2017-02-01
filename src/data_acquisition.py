@@ -58,7 +58,7 @@ class data_acquisition(object):
 
         self.s = rospy.Service('collect_data', Empty, self.collect_data)
         signal.signal(signal.SIGINT, self.signal_handler)
-
+        self.obs_array = np.delete(self.obs_array, (0), axis=0)
         rospy.spin()
 
     def get_params(self):
@@ -84,6 +84,11 @@ class data_acquisition(object):
 
     def collect_data(self, data):
         rospy.loginfo("Service request captured")
+
+        ble_obs = self.get_ble_observation()
+        filtered_ble_observations = self.filter_ble_observations(ble_obs)
+        ble_vector = self.parse_ble_observation(filtered_ble_observations, self.n_ble_beacon)
+
         for i in range(self.n_obs):
             self.epoch, self.rostime = self.get_epoch()
             obs_vector = np.zeros((1,25), dtype=np.float64)
@@ -94,19 +99,13 @@ class data_acquisition(object):
             filtered_wifi_observations = self.filter_wifi_observations(wifi_obs)
             wifi_vector = self.parse_wifi_observation(filtered_wifi_observations, self.n_wifi_AP)
 
-            ble_obs = self.get_ble_observation()
-            filtered_ble_observations = self.filter_ble_observations(ble_obs)
-            ble_vector = self.parse_ble_observation(filtered_ble_observations, self.n_ble_beacon)
-
             obs_vector[0,1:9] = wifi_vector
             obs_vector[0,9:17] = ble_vector
-            # print obs_vector
+
             self.obs_array = np.vstack((self.obs_array, obs_vector))
             print self.obs_array, self.obs_array.shape
             time.sleep(0.5)
 
-        # print wifi_obs
-        # print ble_obs
         return []
 
     def parse_wifi_observation(self, obslist, n_total_obs):
