@@ -72,6 +72,7 @@ class data_acquisition(object):
         self.rf_prefix    = rospy.get_param("/rf_prefix")
         self.n_rf         = rospy.get_param("/n_rf")
         self.n_obs        = rospy.get_param("/n_obs")
+        
     def get_epoch(self):
         return (int(time.time()), rospy.get_rostime())
 
@@ -88,27 +89,37 @@ class data_acquisition(object):
             obs_vector = np.zeros((1,25), dtype=np.float64)
             # print type(self.rostime), type(self.rostime.to_nsec()), self.rostime.to_nsec, np.float64(self.rostime.to_nsec())
             obs_vector[0,0] = np.float64(self.rostime.to_nsec())
-            wifi_obs = self.get_wifi_observation()
-            # ble_obs = self.get_ble_observation()
-            filtered_observations = self.filter_wifi_observations(wifi_obs)
-            wifi_vector = self.parse_observation(filtered_observations, self.n_wifi_AP)
-            obs_vector[0,1:9] = wifi_vector
+            # wifi_obs = self.get_wifi_observation()
+            # filtered_wifi_observations = self.filter_wifi_observations(wifi_obs)
+            # wifi_vector = self.parse_wifi_observation(filtered_wifi_observations, self.n_wifi_AP)
+
+            ble_obs = self.get_ble_observation()
+            filtered_ble_observations = self.filter_ble_observations(ble_obs)
+            ble_vector = self.parse_ble_observation(filtered_ble_observations, self.n_ble_beacon)
+            # obs_vector[0,1:9] = wifi_vector
             # print obs_vector
-            self.obs_array = np.vstack((self.obs_array, obs_vector))
-            print self.obs_array, self.obs_array.shape
+            # self.obs_array = np.vstack((self.obs_array, obs_vector))
+            # print self.obs_array, self.obs_array.shape
             time.sleep(0.5)
 
         # print wifi_obs
         # print ble_obs
         return []
 
-    def parse_observation(self, obslist, n_total_obs):
+    def parse_wifi_observation(self, obslist, n_total_obs):
         n_obs = len(obslist)
         obs_array = np.zeros(n_total_obs, dtype=np.float64)
         for i in range(n_obs):
             chunks = obslist[i].ssid.split("_")
-            # print obslist[i].ssid, obslist[i].rss, chunks, chunks[-1], type(chunks[-1])
             obs_array[int(chunks[-1])] = obslist[i].rss
+        return obs_array
+
+    def parse_observation_ble(self, obslist, n_total_obs):
+        n_obs = len(obslist)
+        obs_array = np.zeros(n_total_obs, dtype=np.float64)
+        for i in range(n_obs):
+            chunks = obslist[i].ssid.split("_")
+            obs_array[int(chunks[-2])] = obslist[i].rss
         return obs_array
 
     def filter_wifi_observations(self, obslist):
@@ -119,7 +130,23 @@ class data_acquisition(object):
             ssid = obslist.observations[i].ssid
             if len(ssid)<len(self.wifi_prefix):
                 continue
+
             if ssid[0:len(self.wifi_prefix)] == self.wifi_prefix:
+                ssidList.append(ssid)
+                rospy.loginfo("Discovered Node: %s, RSSI: %s", obslist.observations[i].ssid, obslist.observations[i].rss)
+                filtered_observations.append(obslist.observations[i])
+        return filtered_observations
+
+    def filter_ble_observations(self, obslist):
+        filtered_observations = list()
+        ssidList = list()
+        sorted_observations = list()
+        for i in range(len(obslist.observations)):
+            ssid = obslist.observations[i].ssid
+            if len(ssid)<len(self.ble_prefix):
+                continue
+
+            if ssid[0:len(self.ble_prefix)] == self.ble_prefix:
                 ssidList.append(ssid)
                 rospy.loginfo("Discovered Node: %s, RSSI: %s", obslist.observations[i].ssid, obslist.observations[i].rss)
                 filtered_observations.append(obslist.observations[i])
