@@ -2,7 +2,7 @@
   <param name="/port" type="str" value="/dev/ttyUSB0" />
   <param name="/baud" type="int" value="115200" />
 
-  <param name="/n_obs" type="int" value="1" />
+  <param name="/n_obs" type="int" value="3" />
 
   <param name="/wifi_prefix" type="str" value="SENSORNET_CMS_" />
   <param name="/n_wifi_ap" type="int" value="8" />
@@ -14,7 +14,7 @@
   <param name="/ble_suffix" type="str" value="_BLE" />
   <param name="/n_ble_beacon" type="int" value="8" />
 
-  <!-- <node pkg="wifi_observation" type="get_observation.py" name="get_wifi_observation" output="screen" /> -->
+  <node pkg="wifi_observation" type="get_observation.py" name="get_wifi_observation" output="screen" />
   <node pkg="ble_observation" type="get_observation.py" name="get_ble_observation" output="screen" />
   <node pkg="rf_data_acquisition" type="data_acquisition.py" name="data_acquisition" output="screen" />
 </launch>
