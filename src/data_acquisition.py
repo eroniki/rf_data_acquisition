@@ -30,35 +30,47 @@ class data_acquisition(object):
     def __init__(self):
         super(data_acquisition, self).__init__()
         rospy.init_node('data_acquisition')
-        self.rate            = rospy.Rate(10) # 10hz
-        self.folder_location = None
-        self.db_name         = None
-        self.is_txt          = None
-        self.is_npy          = None
-        self.is_mat          = None
-        self.db_exists       = None
-        self.epoch           = None
-        self.rostime         = None
-        self.ble_response    = None
-        self.wifi_response   = None
-        self.rf_response     = None
-        self.pose            = None
-        self.obs_array       = np.zeros((1,25), dtype=np.float64)
-        self.port            = None
-        self.baud            = None
-        self.wifi_prefix     = None
-        self.ble_prefix      = None
-        self.ble_suffix      = None
-        self.n_wifi_AP       = None
-        self.n_ble_beacon    = None
-        self.rf_prefix       = None
-        self.n_rf            = None
-        self.n_obs           = None
+        self.rate             = rospy.Rate(10) # 10hz
+        self.folder_location  = None
+        self.db_name          = None
+        self.is_txt           = None
+        self.is_npy           = None
+        self.is_mat           = None
+        self.db_exists        = None
+        self.epoch            = None
+        self.rostime          = None
+        self.ble_response     = None
+        self.wifi_response    = None
+        self.rf_response      = None
+        self.pose             = None
+        self.obs_array        = np.zeros((1,26), dtype=np.float64)
+        self.port             = None
+        self.baud             = None
+        self.wifi_prefix      = None
+        self.ble_prefix       = None
+        self.ble_suffix       = None
+        self.n_wifi_AP        = None
+        self.n_ble_beacon     = None
+        self.rf_prefix        = None
+        self.n_rf             = None
+        self.n_obs            = None
+        self.db_location      = None
+        self.db_name          = None
+        self.db_fmt           = ".npy"
+        self.parent_directory = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
+        self.full_db          = None
+        self.pos_idx          = 0
+
         self.get_params()
 
-        self.s = rospy.Service('collect_data', Empty, self.collect_data)
-        signal.signal(signal.SIGINT, self.signal_handler)
+        print self.construct_full_location()
+
+        self.s0 = rospy.Service('collect_data', Empty, self.collect_data)
+        self.s1 = rospy.Service('save_data', Empty, self.save_data)
         self.obs_array = np.delete(self.obs_array, (0), axis=0)
+
+        signal.signal(signal.SIGINT, self.signal_handler)
+
         rospy.spin()
 
     def get_params(self):
@@ -72,15 +84,20 @@ class data_acquisition(object):
         self.rf_prefix    = rospy.get_param("/rf_prefix")
         self.n_rf         = rospy.get_param("/n_rf")
         self.n_obs        = rospy.get_param("/n_obs")
+        self.db_location  = rospy.get_param("/db_location")
+        self.db_name      = rospy.get_param("/db_name")
+        self.db_fmt       = rospy.get_param("/db_fmt")
 
     def get_epoch(self):
-        return (int(time.time()), rospy.get_rostime())
+        return int(time.time()), rospy.get_rostime()
 
-    def construct_full_location(self, arg):
-        pass
+    def construct_full_location(self):
+        _, epoch = self.get_epoch()
+        return self.parent_directory + '/' + self.db_location + self.db_name + "_" + str(epoch) + self.db_fmt
 
-    def set_params(self):
-        rospy.set_param('~folder_name', 1+2)
+    def save_data(self, data):
+        self.save_db(self.obs_array, location=self.construct_full_location(), fmt=self.db_fmt)
+        return []
 
     def collect_data(self, data):
         rospy.loginfo("Service request captured")
@@ -91,7 +108,7 @@ class data_acquisition(object):
 
         for i in range(self.n_obs):
             self.epoch, self.rostime = self.get_epoch()
-            obs_vector = np.zeros((1,25), dtype=np.float64)
+            obs_vector = np.zeros((1,26), dtype=np.float64)
             # print type(self.rostime), type(self.rostime.to_nsec()), self.rostime.to_nsec, np.float64(self.rostime.to_nsec())
             obs_vector[0,0] = np.float64(self.rostime.to_nsec())
 
@@ -101,11 +118,12 @@ class data_acquisition(object):
 
             obs_vector[0,1:9] = wifi_vector
             obs_vector[0,9:17] = ble_vector
+            obs_vector[0,25] = self.pos_idx
 
             self.obs_array = np.vstack((self.obs_array, obs_vector))
             print self.obs_array, self.obs_array.shape
             time.sleep(0.5)
-
+        self.pos_idx += 1
         return []
 
     def parse_wifi_observation(self, obslist, n_total_obs):
@@ -187,40 +205,16 @@ class data_acquisition(object):
             rospy.loginfo("Service did not process request: %s" + str(exc))
         return obs_response
 
-    def save_db(self, fmt):
-        if fmt == "mat":
-            # self.save_mat()
-            pass
-        elif fmt == "npy":
-            # self.save_npy()
-            pass
-        elif fmt == "txt":
-            # self.save_txt()
-            pass
+    def save_db(self, array, location, fmt):
+        if fmt == ".mat":
+            scipy.io.savemat(location, {'data':array})
+        elif fmt == ".npy":
+            np.save(location, array)
+        elif fmt == ".txt":
+            np.savetxt(location, array, delimiter=',')
         else:
             rospy.loginfo("Wrong file format")
             return False
-
-
-    # TODO: Implement
-    def save_txt(self, array):
-        pass
-
-    def save_npy(self, array):
-        full_file = self.construct_full_location(self.folder_location, self.db_name)
-        np.save(full_file, array)
-
-    def save_mat(self, array):
-        full_file = self.construct_full_location(self.folder_location, self.db_name)
-        scipy.io.savemat(full_file, {'data':array})
-
-    def check_database_exists(self, full_file):
-        try:
-            exists = os.path.exists(full_file)
-        except Exception as e:
-            print "Exception caught!"
-            print e
-        return exists
 
     def signal_handler(self, signal, frame):
         print "Gracefully exited"
