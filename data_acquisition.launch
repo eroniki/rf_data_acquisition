@@ -14,6 +14,10 @@
   <param name="/ble_suffix" type="str" value="_BLE" />
   <param name="/n_ble_beacon" type="int" value="8" />
 
+  <param name="db_location" type="str" value="etc/db/" />
+  <param name="db_name" type="str" value="test" />
+  <param name="db_fmt" type="str" value=".npy" />
+
   <node pkg="wifi_observation" type="get_observation.py" name="get_wifi_observation" output="screen" />
   <node pkg="ble_observation" type="get_observation.py" name="get_ble_observation" output="screen" />
   <node pkg="rf_data_acquisition" type="data_acquisition.py" name="data_acquisition" output="screen" />
