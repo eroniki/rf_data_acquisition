@@ -20,6 +20,10 @@ from wifi_observation.srv import WifiArrayService
 from wifi_observation.srv import WifiArrayServiceResponse
 from wifi_observation.msg import WifiMessage
 
+from xbee_observation.srv import XBeeArrayService
+from xbee_observation.srv import XBeeArrayServiceResponse
+from xbee_observation.msg import XBeeMessage
+
 from std_msgs.msg import Header
 from std_msgs.msg import String
 from std_msgs.msg import Int64
@@ -51,8 +55,8 @@ class data_acquisition(object):
         self.ble_suffix       = None
         self.n_wifi_AP        = None
         self.n_ble_beacon     = None
-        self.rf_prefix        = None
-        self.n_rf             = None
+        # self.rf_prefix        = None
+        # self.n_rf             = None
         self.n_obs            = None
         self.db_location      = None
         self.db_name          = None
@@ -74,20 +78,20 @@ class data_acquisition(object):
         rospy.spin()
 
     def get_params(self):
-        self.port         = rospy.get_param("/port")
-        self.baud         = rospy.get_param("/baud")
+        self.port         = rospy.get_param("/port_wifi")
+        self.baud         = rospy.get_param("/baud_wifi")
         self.wifi_prefix  = rospy.get_param("/wifi_prefix")
         self.ble_prefix   = rospy.get_param("/ble_prefix")
         self.ble_suffix   = rospy.get_param("/ble_suffix")
         self.n_wifi_AP    = rospy.get_param("/n_wifi_ap")
         self.n_ble_beacon = rospy.get_param("/n_ble_beacon")
-        self.rf_prefix    = rospy.get_param("/rf_prefix")
-        self.n_rf         = rospy.get_param("/n_rf")
+        # self.rf_prefix    = rospy.get_param("/rf_prefix")
+        # self.n_rf         = rospy.get_param("/n_rf")
         self.n_obs        = rospy.get_param("/n_obs")
         self.db_location  = rospy.get_param("/db_location")
         self.db_name      = rospy.get_param("/db_name")
         self.db_fmt       = rospy.get_param("/db_fmt")
-
+        self.xbee_addr    = rospy.get_param("/xbee_addresses")
     def get_epoch(self):
         return int(time.time()), rospy.get_rostime()
 
@@ -116,8 +120,12 @@ class data_acquisition(object):
             filtered_wifi_observations = self.filter_wifi_observations(wifi_obs)
             wifi_vector = self.parse_wifi_observation(filtered_wifi_observations, self.n_wifi_AP)
 
+            xbee_obs = self.get_xbee_observation()
+            xbee_vector = self.parse_xbee_observation(xbee_obs)
+
             obs_vector[0,1:9] = wifi_vector
             obs_vector[0,9:17] = ble_vector
+            obs_vector[0,17:25] = xbee_vector
             obs_vector[0,25] = self.pos_idx
 
             self.obs_array = np.vstack((self.obs_array, obs_vector))
@@ -125,6 +133,14 @@ class data_acquisition(object):
             time.sleep(0.5)
         self.pos_idx += 1
         return []
+
+    def parse_xbee_observation(self, obslist):
+        n_obs = len(obslist.observations)
+        obs_array = np.zeros(n_obs, dtype=np.float64)
+
+        for i in range(n_obs):
+            obs_array[i] = obslist.observations[i].rss
+        return obs_array
 
     def parse_wifi_observation(self, obslist, n_total_obs):
         n_obs = len(obslist)
@@ -182,6 +198,17 @@ class data_acquisition(object):
                 rospy.loginfo("Discovered Node: %s, RSSI: %s", obslist.observations[i].ssid, obslist.observations[i].rss)
                 filtered_observations.append(obslist.observations[i])
         return filtered_observations
+
+    def get_xbee_observation(self):
+        rospy.wait_for_service('xbee_observation')
+        xbee_observation = rospy.ServiceProxy('xbee_observation', XBeeArrayService)
+        obs_response = None
+        try:
+            obs_response = xbee_observation()
+            rospy.loginfo("XBee observations acquired with return code and message %s, %s.\n Total number of observations acquired: %d", obs_response.success, obs_response.message, len(obs_response.observations))
+        except rospy.ServiceException as exc:
+            rospy.loginfo("Service did not process request: %s" + str(exc))
+        return obs_response
 
     def get_wifi_observation(self):
         rospy.wait_for_service('wifi_observation')
