@@ -55,8 +55,8 @@ class data_acquisition(object):
         self.ble_suffix       = None
         self.n_wifi_AP        = None
         self.n_ble_beacon     = None
-        # self.rf_prefix        = None
-        # self.n_rf             = None
+        # self.rf_prefix      = None
+        # self.n_rf           = None
         self.n_obs            = None
         self.db_location      = None
         self.db_name          = None
@@ -66,9 +66,10 @@ class data_acquisition(object):
         self.pos_idx          = 0
 
         self.get_params()
+        self.full_location    = self.construct_full_location()
 
-        print self.construct_full_location()
-
+        print self.full_location
+        
         self.s0 = rospy.Service('collect_data', Empty, self.collect_data)
         self.s1 = rospy.Service('save_data', Empty, self.save_data)
         self.obs_array = np.delete(self.obs_array, (0), axis=0)
@@ -100,7 +101,7 @@ class data_acquisition(object):
         return self.parent_directory + '/' + self.db_location + self.db_name + "_" + str(epoch) + self.db_fmt
 
     def save_data(self, data):
-        self.save_db(self.obs_array, location=self.construct_full_location(), fmt=self.db_fmt)
+        self.save_db(self.obs_array, location=self.full_location, fmt=self.db_fmt)
         return []
 
     def collect_data(self, data):
