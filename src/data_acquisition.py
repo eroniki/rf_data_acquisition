@@ -11,6 +11,7 @@ import numpy as np
 import scipy.io as scio
 
 import rospy
+import matplotlib.pyplot as plt
 
 from ble_observation.srv import BLEArrayService
 from ble_observation.srv import BLEArrayServiceResponse
@@ -64,18 +65,20 @@ class data_acquisition(object):
         self.parent_directory = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir))
         self.full_db          = None
         self.pos_idx          = 0
-
+        self.figure           = None
+        self.axes             = None
         self.get_params()
         self.full_location    = self.construct_full_location()
 
         print self.full_location
-        
+        self.figure, self.axes = self.init_visualization()
         self.s0 = rospy.Service('collect_data', Empty, self.collect_data)
         self.s1 = rospy.Service('save_data', Empty, self.save_data)
         self.obs_array = np.delete(self.obs_array, (0), axis=0)
 
         signal.signal(signal.SIGINT, self.signal_handler)
 
+        plt.show()
         rospy.spin()
 
     def get_params(self):
@@ -122,18 +125,44 @@ class data_acquisition(object):
             wifi_vector = self.parse_wifi_observation(filtered_wifi_observations, self.n_wifi_AP)
 
             xbee_obs = self.get_xbee_observation()
-            xbee_vector = self.parse_xbee_observation(xbee_obs)
+            xbee_vector = -1*self.parse_xbee_observation(xbee_obs)
 
             obs_vector[0,1:9] = wifi_vector
             obs_vector[0,9:17] = ble_vector
             obs_vector[0,17:25] = xbee_vector
             obs_vector[0,25] = self.pos_idx
-
+            self.plot_measurements(wifi_vector, ble_vector, xbee_vector)
             self.obs_array = np.vstack((self.obs_array, obs_vector))
-            print self.obs_array, self.obs_array.shape
+            print obs_vector, self.obs_array.shape
             time.sleep(0.5)
         self.pos_idx += 1
         return []
+
+    def init_visualization(self):
+        self.figure = plt.figure(1)
+        ax1 = self.figure.add_subplot(311)
+        ax1.set_title("WiFi Measurements")
+        ax2 = self.figure.add_subplot(312)
+        ax2.set_title("BT Measurements")
+        ax3 = self.figure.add_subplot(313)
+        ax3.set_title("LoRa Measurements")
+        return self.figure, [ax1, ax2, ax3]
+
+    def plot_measurements(self, wifi_vector, ble_vector, xbee_vector):
+        self.figure.clear()
+        self.figure, self.axes = self.init_visualization()
+        self.axes[0].bar(range(wifi_vector.size), wifi_vector)
+        self.axes[0].set_xlim([0,wifi_vector.size])
+        self.axes[0].grid(True)
+        self.axes[1].bar(range(ble_vector.size), ble_vector)
+        self.axes[1].set_xlim([0,ble_vector.size])
+        self.axes[1].grid(True)
+        self.axes[2].bar(range(xbee_vector.size), xbee_vector)
+        self.axes[2].set_xlim([0,xbee_vector.size])
+        self.axes[2].grid(True)
+        self.figure.canvas.draw()
+        # plt.draw()
+        # self.axes[2].draw()
 
     def parse_xbee_observation(self, obslist):
         n_obs = len(obslist.observations)
