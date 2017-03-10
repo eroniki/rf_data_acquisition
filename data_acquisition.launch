@@ -1,7 +1,7 @@
 <launch>
   <param name="/n_obs" type="int" value="3" />
 
-  <param name="/port_wifi" type="str" value="/dev/ttyUSB1" />
+  <param name="/port_wifi" type="str" value="/dev/ttyUSB0" />
   <param name="/baud_wifi" type="int" value="115200" />
   <param name="/wifi_prefix" type="str" value="SENSORNET_CMS_" />
   <param name="/n_wifi_ap" type="int" value="8" />
@@ -15,7 +15,7 @@
   <param name="/ble_suffix" type="str" value="_BLE" />
   <param name="/n_ble_beacon" type="int" value="8" />
 
-  <param name="/port_xbee" type="str" value="/dev/ttyUSB0" />
+  <param name="/port_xbee" type="str" value="/dev/ttyUSB1" />
   <param name="/baud_xbee" type="int" value="9600" />
   <rosparam param="/xbee_addresses">["0013A2004126B1B5", "0013A2004126B1B8", "0013A2004149C6FB", "0013A200415B452B", "0013A200415B453E", "0013A2004149C6F8", "0013A2004149C6F5", "0013A200415B4541"]</rosparam>
 
