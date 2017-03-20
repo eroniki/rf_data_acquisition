@@ -1,19 +1,19 @@
 %% Visualization 
 %% 3-D
 [xx, yy] = meshgrid(1:25,1:7);
-figure(1);
+figure;
 for i=1:8
     subplot(4,2,i); surf(xx,yy, reshape(propagation_maps(:,:,i), [25,7])');
     title(['WiFi Anchor Node:', num2str(i-1)]);
 end
 %
-figure(2);
+figure;
 for i=1:8
     subplot(4,2,i); surf(xx,yy, reshape(propagation_maps(:,:,i+8), [25,7])');
     title(['BT Anchor Node:', num2str(i-1)]);
 end
 
-figure(3);
+figure;
 for i=1:8
     subplot(4,2,i); surf(xx,yy, reshape(propagation_maps(:,:,i+16), [25,7])');
     title(['LoRa Anchor Node:', num2str(i-1)]);
@@ -67,7 +67,7 @@ end
 for i=1:8
     figure;
     plot(pos_node(i,1), pos_node(i,2), 'r*'); grid on;
-    title(['Anchor Node ', num2str(i-1), ' LoRa Error Map']);
+    title(['Anchor Node ', num2str(i-1), ' LoRa Error Map (w/ Joint PLE)']);
     hold on;
     imagesc(reshape(error_map(:,:,i), [25,7]));
     colorbar;
@@ -78,7 +78,7 @@ end
 for i=1:8
     figure;
     plot(pos_node(i,1), pos_node(i,2), 'r*'); grid on;
-    title(['Anchor Node ', num2str(i-1), ' LoRa Error Map']);
+    title(['Anchor Node ', num2str(i-1), ' LoRa Error Map (w/ Ind. PLE)']);
     hold on;
     imagesc(reshape(error_map_ind(:,:,i), [25,7]));
     colorbar;
@@ -89,12 +89,14 @@ end
 [cdf, counts, bins] = localization_cdf(e_vec(:), 50);
 [cdf_ind, counts_ind, bins_ind] = localization_cdf(e_vec_ind(:), 50);
 figure; plot(bins, cdf, 'r', bins_ind, cdf_ind, 'b'); grid on; grid minor; 
-% figure; bar(bins, counts); grid on;
-[h, p] = kstest(z_score(error_map(:)))
+figure; bar(bins, counts); grid on;
+
 
 %% Save Figures
-n = get(gcf,'Number');
+if save_figures
+    n = get(gcf,'Number');
 
-for i=1:n
-    saveas(i, ['output_', num2str(i), '.png'],'png');
+    for i=1:n
+        saveas(i, ['output/output_', num2str(i), '.png'],'png');
+    end
 end
