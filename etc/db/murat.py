@@ -10,3 +10,7 @@ data_total = np.vstack([data1, data2])
 print data_total.shape, np.mean(data_total)
 
 scio.savemat("hancock_03_09.mat", {"data_total":data_total})
+scio.savemat("3032.mat", {'data_3032': data1})
+scio.savemat("1019.mat", {'data_1019': data2})
+
+print data1.shape, data2.shape
