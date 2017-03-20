@@ -61,12 +61,12 @@ y_hat_y = lbls_y(y_hat_ind_y);
 [confusionMaty,order] = confusionmat(Y_y,y_hat_y);
 
 % precision(confusionMatx)
-recall(confusionMatx)
+recall(confusionMatx);
 % f1Scores(confusionMatx)
 % meanF1(confusionMatx)
 
 % precision(confusionMaty)
-recall(confusionMaty)
+recall(confusionMaty);
 % f1Scores(confusionMaty)
 % meanF1(confusionMaty)
 
@@ -76,3 +76,20 @@ subplot(1,2,2); imagesc(confusionMaty/1543);
 sum(bsxfun(@eq, Y_x,double(y_hat_x)))/1543
 sum(bsxfun(@eq, Y_y,double(y_hat_y)))/1543
 I = sum(grid_labels_ds(:, 1) == y_hat_x & grid_labels_ds(:, 2) == y_hat_y)/1543
+
+e_bayesian = localization_error(grid_labels, [y_hat_x, y_hat_y]);
+
+[cdf, counts, bins] = localization_cdf(e_vec(:), 100);
+[cdf_ind, counts_ind, bins_ind] = localization_cdf(e_vec_ind(:), 100);
+[cdf_b, counts_b, bins_b] = localization_cdf(e_bayesian(:), 100);
+figure; plot(bins, cdf, 'r', bins_ind, cdf_ind, 'b', bins_b, cdf_b, 'g'); grid on; grid minor; 
+legend('Joint PLE', 'Ind PLE', 'Bayesian');
+
+[min_val, min_id] = min(abs(cdf-0.9));
+bins(min_id)
+
+[min_val, min_id] = min(abs(cdf_ind-0.9));
+bins_ind(min_id)
+
+[min_val, min_id] = min(abs(cdf_b-0.9));
+bins_b(min_id)
