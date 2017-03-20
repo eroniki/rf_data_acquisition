@@ -216,7 +216,9 @@ clear grid;
 propagation_maps = propagation_maps ./ n_obs;
 propagation_maps(isnan(propagation_maps)) = 0;
 %% Save Measurement Space and Grid-cell Labels
-measurements = measurement_space(:,1:24);
 grid_labels = grid_labels - 1;
 save('hancock_data.mat', 'data_wifi' ,'data_bt', 'data_lora', 'grid_labels_linear', 'grid_labels');
 grid_labels = grid_labels + 1;
+
+%% Clear up unnecessary variables
+clear i idx data_1019 data_3032 grid_labels_1019 grid_labels_3032 n_obs grid_cell measurement_space
