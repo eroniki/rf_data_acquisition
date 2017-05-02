@@ -1,31 +1,57 @@
 <launch>
+  <!-- <include file="$(find rf_data_acquisition)/acquisition.launch"/> -->
+  <!-- Number of successive measurements for each measurement points -->
   <param name="/n_obs" type="int" value="3" />
 
-  <param name="/port_wifi" type="str" value="/dev/ttyUSB0" />
-  <param name="/baud_wifi" type="int" value="115200" />
-  <param name="/wifi_prefix" type="str" value="SENSORNET_CMS_" />
-  <param name="/n_wifi_ap" type="int" value="8" />
+  <!-- Namespace Names for XBee Services -->
+  <arg name="wifi_namespace" default="wifi_ns" />
+  <arg name="lora_namespace" default="lora_ns" />
 
+  <param name="wifi_namespace" value="$(arg wifi_namespace)" />
+  <param name="lora_namespace" value="$(arg lora_namespace)" />
 
-  <!-- TODO: DO NOT FORGET TO CHANGE THESE VALUES ACCORDING TO ACTUAL DESIGN -->
-  <!-- <param name="/rf_prefix" type="str" value="SENSORNET_CMS_" /> -->
-  <!-- <param name="/n_rf" type="int" value="8" /> -->
+  <!-- Service Names -->
+  <!-- <arg name="wifi_service" default="wifi_service" />
+  <arg name="lora_service" default="lora_service" />
 
-  <param name="/ble_prefix" type="str" value="SENSORNET_CMS_" />
-  <param name="/ble_suffix" type="str" value="_BLE" />
-  <param name="/n_ble_beacon" type="int" value="8" />
+  <param name="wifi_service" value="$(arg wifi_service)" />
+  <param name="lora_service" value="$(arg lora_service)" /> -->
+  <!-- Number of Anchor Nodes -->
+  <arg name="n_wifi" default="15" />
+  <arg name="n_lora" default="8" />
 
-  <param name="/port_xbee" type="str" value="/dev/ttyUSB1" />
-  <param name="/baud_xbee" type="int" value="9600" />
-  <rosparam param="/xbee_addresses">["0013A2004126B1B5", "0013A2004126B1B8", "0013A2004149C6FB", "0013A200415B452B", "0013A200415B453E", "0013A2004149C6F8", "0013A2004149C6F5", "0013A200415B4541"]</rosparam>
+  <param name="n_wifi" type="int" value="$(arg n_wifi)" />
+  <param name="n_lora" type="int" value="$(arg n_lora)" />
 
+  <!-- Debuggin Level (Binary: On - Off ) -->
+  <param name="debug" type="bool" value="true" />
+  <param name="visualize" type="bool" value="false" />
+
+  <!-- LoRa Network Parameters -->
+  <node pkg="xbee_observation" type="get_observation.py" name="xbee_observation" output="screen" ns="$(arg lora_namespace)">
+    <param name="port_xbee" type="str" value="/dev/ttyUSB0" />
+    <param name="baud_xbee" type="int" value="9600" />
+  </node>
+  <rosparam param="xbee_addresses" ns="$(arg lora_namespace)">
+    ["0013A2004126B1B5", "0013A2004126B1B8", "0013A2004149C6FB", "0013A200415B452B", "0013A200415B453E", "0013A2004149C6F8", "0013A2004149C6F5", "0013A200415B4541"]
+    <!-- ["0013A2004126B1B5", "0013A2004126B1B8"] -->
+  </rosparam>
+
+  <!-- WiFi Network Parameters -->
+  <node pkg="xbee_observation" type="get_observation.py" name="xbee_observation" output="screen" ns="$(arg wifi_namespace)">
+    <param name="port_xbee" type="str" value="/dev/ttyUSB0"/>
+    <param name="baud_xbee" type="int" value="9600"/>
+  </node>
+  <rosparam param="xbee_addresses" ns="$(arg wifi_namespace)">
+    ["0013A2004126B1B5", "0013A2004126B1B8", "0013A2004149C6FB", "0013A200415B452B", "0013A200415B453E", "0013A2004149C6F8", "0013A2004149C6F5", "0013A200415B4541"]
+    <!-- ["0013A2004126B1B5", "0013A2004126B1B8"] -->
+  </rosparam>
+
+  <!-- Database Properties -->
   <param name="db_location" type="str" value="etc/db/" />
   <param name="db_name" type="str" value="test" />
   <param name="db_fmt" type="str" value=".npy" />
 
-  <node pkg="wifi_observation" type="get_observation.py" name="get_wifi_observation" output="screen" />
-  <node pkg="ble_observation" type="get_observation.py" name="get_ble_observation" output="screen" />
-  <node pkg="xbee_observation" type="get_observation.py" name="get_xbee_observation" output="screen" />
-
+  <!-- Data Acquisition Tool -->
   <node pkg="rf_data_acquisition" type="data_acquisition.py" name="data_acquisition" output="screen" />
 </launch>
